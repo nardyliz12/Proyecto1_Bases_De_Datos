@@ -277,16 +277,30 @@ class Pokemon(pygame.sprite.Sprite):
 
 
     def draw_hp(self):
-        hp_background = pygame.image.load('barra2.png')
-        hp_background = pygame.transform.scale(hp_background, (180, 60))
-        game.blit(hp_background, (self.hp_x - 10, self.hp_y - 10))
+        hp_background = pygame.image.load('barra2.png')  # Asegúrate de que esta ruta sea correcta
+        hp_background = pygame.transform.scale(hp_background,
+                                               (180, 60))  # Ajusta el tamaño de acuerdo a las barras de HP
+
+        # Dibuja el fondo detrás de la barra de HP
+        game.blit(hp_background, (self.hp_x - 10, self.hp_y - 10))  # Ajusta la posición según necesites
+
+        # display the health bar
         bar_scale = 200 // self.max_hp
         for i in range(self.max_hp):
             bar = (self.hp_x + bar_scale * i, self.hp_y, bar_scale, 20)
             pygame.draw.rect(game, red, bar)
+
         for i in range(self.current_hp):
             bar = (self.hp_x + bar_scale * i, self.hp_y, bar_scale, 20)
             pygame.draw.rect(game, green, bar)
+
+        # display "HP" text
+        font = pygame.font.Font(pygame.font.get_default_font(), 16)
+        text = font.render(f'HP: {self.current_hp} / {self.max_hp}', True, black)
+        text_rect = text.get_rect()
+        text_rect.x = self.hp_x
+        text_rect.y = self.hp_y + 30
+        game.blit(text, text_rect)
 
     def get_rect(self):
         return Rect(self.x, self.y, self.image.get_width(), self.image.get_height())
@@ -391,9 +405,11 @@ while game_status != 'quit':
                     elif game_status == 'player move':
                         for i in range(len(move_buttons)):
                             button = move_buttons[i]
+
                             if button.collidepoint(mouse_click):
                                 move = player_pokemon.moves[i]
                                 player_pokemon.perform_attack(rival_pokemon, move)
+
                                 if rival_pokemon.current_hp == 0:
                                     game_status = 'fainted'
                                 else:
@@ -513,7 +529,7 @@ while game_status != 'quit':
         # rival sends out their pokemon
         alpha = 0
         while alpha < 255:
-            game.blit(background, (0, 0))  # fondo
+            game.fill(white) # fondo
             rival_pokemon.draw(alpha)
             display_message(f'Rival sent out {rival_pokemon.name}!')
             alpha += .4
@@ -526,7 +542,7 @@ while game_status != 'quit':
         # player sends out their pokemon
         alpha = 0
         while alpha < 255:
-            game.blit(background, (0, 0))
+            game.fill(white)
             rival_pokemon.draw()
             player_pokemon.draw(alpha)
             display_message(f'Go {player_pokemon.name}!')
@@ -551,7 +567,7 @@ while game_status != 'quit':
 
     # display the fight and use potion buttons
     if game_status == 'player turn':
-        game.blit(background, (0, 0))
+        game.fill(white)
         player_pokemon.draw()
         rival_pokemon.draw()
         player_pokemon.draw_hp()
@@ -569,7 +585,7 @@ while game_status != 'quit':
     # display the move buttons
     if game_status == 'player move':
 
-        game.blit(background, (0, 0))
+        game.fill(white)
         player_pokemon.draw()
         rival_pokemon.draw()
         player_pokemon.draw_hp()
@@ -597,7 +613,7 @@ while game_status != 'quit':
     # rival selects a random move to attack with
     if game_status == 'rival turn':
 
-        game.blit(background, (0, 0))
+        game.fill(white)
         player_pokemon.draw()
         rival_pokemon.draw()
         player_pokemon.draw_hp()
@@ -625,7 +641,7 @@ while game_status != 'quit':
         alpha = 255
         while alpha > 0:
 
-            game.blit(background, (0, 0))
+            game.fill(white)
             player_pokemon.draw_hp()
             rival_pokemon.draw_hp()
 
@@ -658,7 +674,6 @@ while game_status != 'quit':
         game.fill((0, 0, 0))  # Fondo negro
         draw_buttons()
         draw_message()
-
         # Mostrar el temporizador en la esquina superior izquierda
         timer_text = font.render(f'Tiempo restante: {time_left}', True, (255, 255, 255))
         screen.blit(timer_text, (10, 10))
