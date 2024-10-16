@@ -403,6 +403,10 @@ while game_status != 'quit':
 
                     # Selección de movimientos del jugador en el estado 'player move'
                     elif game_status == 'player move':
+                        player_pokemon.draw()
+                        rival_pokemon.draw()
+                        player_pokemon.draw_hp()
+                        rival_pokemon.draw_hp()
                         for i in range(len(move_buttons)):
                             button = move_buttons[i]
 
