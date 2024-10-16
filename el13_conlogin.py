@@ -385,19 +385,18 @@ def draw_buttons():
     game.blit(yes_text, (yes_button_rect.x + 25, yes_button_rect.y + 10))
     game.blit(no_text, (no_button_rect.x + 25, no_button_rect.y + 10))
 
-def create_button(width, height, left, top, text_cx, text_cy, label):
-    mouse_cursor = pygame.mouse.get_pos()
+def create_button(width, height, left, top, text_cx, text_cy, label, selected=False):
+
     button = Rect(left, top, width, height)
 
-    # Resaltar el botón si el mouse está sobre él
-    if button.collidepoint(mouse_cursor):
-        pygame.draw.rect(game, gold, button)
+    # Resaltar el botón si el mouse está sobre él o si está seleccionado
+    if selected:
+        pygame.draw.rect(game, gold, button)  # Color dorado si está seleccionado
     else:
         pygame.draw.rect(game, white, button)
-
     # Añadir la etiqueta al botón
     font = pygame.font.Font(pygame.font.get_default_font(), 16)
-    text = font.render(f'{label}', True, black)
+    text = font.render(f'{label}', True, black)  # Texto negro para que se vea bien
     text_rect = text.get_rect(center=(text_cx, text_cy))
     game.blit(text, text_rect)
 
@@ -444,99 +443,140 @@ while game_status != 'quit':
         if event.type == QUIT:
             game_status = 'quit'
 
-        if event.type == MOUSEBUTTONDOWN:
-                    mouse_click = event.pos
-                    # Selección entre "Fight" y "Potion" en el estado 'player turn'
-                    if game_status == 'player turn':
-                        if fight_button.collidepoint(mouse_click):
-                            game_status = 'player move'  # Cambia a seleccionar movimiento
-                        elif potion_button.collidepoint(mouse_click):
-                            if player_pokemon.num_potions == 0:
-                                display_message('No more potions left')
-                                time.sleep(2)
-                                game_status = 'player move'
-                            else:
-                                player_pokemon.use_potion()
-                                display_message(f'{player_pokemon.name} used potion')
-                                time.sleep(2)
-                                game_status = 'rival turn'
+        # Detección de teclas (si quieres mantener soporte para teclado)
+        if event.type == pygame.KEYDOWN:
+            if game_status == 'player turn':
+                if event.key == pygame.K_UP or event.key == pygame.K_LEFT:
+                    selected_option = 0  # Selecciona "Fight"
+                elif event.key == pygame.K_DOWN or event.key == pygame.K_RIGHT:
+                    selected_option = 1  # Selecciona "Potion"
+                elif event.key == pygame.K_RETURN:
+                    if selected_option == 0:
+                        game_status = 'player move'  # Cambia a seleccionar movimiento
+                    elif selected_option == 1:
+                        if player_pokemon.num_potions == 0:
+                            display_message('No more potions left')
+                            time.sleep(2)
+                            game_status = 'player move'
+                        else:
+                            player_pokemon.use_potion()
+                            display_message(f'{player_pokemon.name} used potion')
+                            time.sleep(2)
+                            game_status = 'rival turn'
 
-                    # Selección de movimientos del jugador en el estado 'player move'
-                    elif game_status == 'player move':
-                        player_pokemon.draw()
-                        rival_pokemon.draw()
-                        player_pokemon.draw_hp()
-                        rival_pokemon.draw_hp()
+            elif game_status == 'player move':
+                player_pokemon.draw()
+                rival_pokemon.draw()
+                player_pokemon.draw_hp()
+                rival_pokemon.draw_hp()
 
-                        # check which move button was clicked
-                        for i in range(len(move_buttons)):
-                            button = move_buttons[i]
+                if event.key == pygame.K_UP or event.key == pygame.K_LEFT:
+                    selected_move = (selected_move - 1) % len(player_pokemon.moves)  # Mover hacia arriba/izquierda
+                elif event.key == pygame.K_DOWN or event.key == pygame.K_RIGHT:
+                    selected_move = (selected_move + 1) % len(player_pokemon.moves)  # Mover hacia abajo/derecha
+                elif event.key == pygame.K_RETURN:
+                    move = player_pokemon.moves[selected_move]
+                    player_pokemon.perform_attack(rival_pokemon, move)
 
-                            if button.collidepoint(mouse_click):
-                                move = player_pokemon.moves[i]
-                                player_pokemon.perform_attack(rival_pokemon, move)
+                    if rival_pokemon.current_hp == 0:
+                        game_status = 'fainted'
+                    else:
+                        game_status = 'rival turn'
 
-                                # check if the rival's pokemon fainted
-                                if rival_pokemon.current_hp == 0:
-                                    game_status = 'fainted'
-                                else:
-                                    game_status = 'rival turn'
+        # Ahora agregamos el manejo de clics en los botones gráficos de movimiento
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            mouse_pos = pygame.mouse.get_pos()  # Obtener la posición del ratón
+            mouse_pressed = pygame.mouse.get_pressed()  # Obtener estado del clic del ratón
 
-    # Dibuja los botones de movimiento
-    draw_movement_buttons()
+            if game_status == 'select pokemon':
+                # Si se presiona el botón izquierdo del mouse
+                if buttons["left"].collidepoint(mouse_pos) and not button_clicked:
+                    selected_index = (selected_index - 1) % len(pokemons)
 
-    # Dibuja el botón "Enter"
-    enter_button_rect = pygame.Rect(550, 250, 50, 50)
-    pygame.draw.rect(screen, (0, 0, 255), enter_button_rect)
-    enter_text = font.render("E", True, white)
-    screen.blit(enter_text, (enter_button_rect.x + 15, enter_button_rect.y + 10))
+                elif buttons["right"].collidepoint(mouse_pos) and not button_clicked:
+                    selected_index = (selected_index + 1) % len(pokemons)
 
-    mouse_pos = pygame.mouse.get_pos()
-    mouse_pressed = pygame.mouse.get_pressed()
+                elif buttons["up"].collidepoint(mouse_pos) and not button_clicked:  # Mover hacia arriba
+                    selected_index = (selected_index - 3) % len(pokemons)
 
-    if mouse_pressed[0]:  # Si se presiona el botón izquierdo del mouse
-        if buttons["left"].collidepoint(mouse_pos) and not button_clicked:
-            selected_index = (selected_index - 1) % len(pokemons)
-            button_clicked = True  # Marcar que se hizo clic
-        elif buttons["right"].collidepoint(mouse_pos) and not button_clicked:
-            selected_index = (selected_index + 1) % len(pokemons)
-            button_clicked = True  # Marcar que se hizo clic
-        elif buttons["up"].collidepoint(mouse_pos) and not button_clicked:  # Mover hacia arriba
-            selected_index = (selected_index - 3) % len(pokemons)
-            button_clicked = True
-        elif buttons["down"].collidepoint(mouse_pos) and not button_clicked:  # Mover hacia abajo
-            selected_index = (selected_index + 3) % len(pokemons)
-            button_clicked = True
-        elif enter_button_rect.collidepoint(mouse_pos) and not button_clicked:  # Clic en el botón "Enter"
-            player_pokemon = pokemons[selected_index]
-            # Asignar el Pokémon del rival
-            rival_pokemon = pokemons[(selected_index + 1) % len(pokemons)]
+                elif buttons["down"].collidepoint(mouse_pos) and not button_clicked:  # Mover hacia abajo
+                    selected_index = (selected_index + 3) % len(pokemons)
 
-            # Reducir el nivel del Pokémon rival para hacer la batalla más fácil
-            rival_pokemon.level = int(rival_pokemon.level * 0.75)
+                elif enter_button_rect.collidepoint(mouse_pos) and not button_clicked:  # Clic en el botón "Enter"
+                    player_pokemon = pokemons[selected_index]
+                    # Asignar el Pokémon del rival
+                    rival_pokemon = pokemons[(selected_index + 1) % len(pokemons)]
 
-            # Establecer las coordenadas de las barras de HP
-            player_pokemon.hp_x = 275
-            player_pokemon.hp_y = 250
-            rival_pokemon.hp_x = 50
-            rival_pokemon.hp_y = 50
-            save_selection_to_csv('pokemon_seleccionado.csv', username, player_pokemon.name)
-            # Cambiar el estado del juego a 'prebattle'
-            game_status = 'prebattle'
+                    # Reducir el nivel del Pokémon rival para hacer la batalla más fácil
+                    rival_pokemon.level = int(rival_pokemon.level * 0.75)
 
-            button_clicked = True  # Marcar que se hizo clic
-    else:
-        button_clicked = False  # Reiniciar si no se está presionando el botón
+                    # Establecer las coordenadas de las barras de HP
+                    player_pokemon.hp_x = 275
+                    player_pokemon.hp_y = 250
+                    rival_pokemon.hp_x = 50
+                    rival_pokemon.hp_y = 50
+                    save_selection_to_csv('pokemon_seleccionado.csv', username, player_pokemon.name)
+                    # Cambiar el estado del juego a 'prebattle'
+                    game_status = 'prebattle'
 
+
+            # Si estamos en el estado "player turn", movemos entre "Fight" y "Potion"
+            elif game_status == 'player turn':
+                if buttons["up"].collidepoint(mouse_pos) or buttons["left"].collidepoint(mouse_pos):
+                    selected_option = 0  # Selecciona "Fight"
+                elif buttons["down"].collidepoint(mouse_pos) or buttons["right"].collidepoint(mouse_pos):
+                    selected_option = 1  # Selecciona "Potion"
+                elif enter_button_rect.collidepoint(mouse_pos):  # Clic en el botón "Enter"
+                    if selected_option == 0:
+                        game_status = 'player move'  # Cambia a seleccionar movimiento
+                    elif selected_option == 1:
+                        if player_pokemon.num_potions == 0:
+                            display_message('No more potions left')
+                            time.sleep(2)
+                            game_status = 'player move'
+                        else:
+                            player_pokemon.use_potion()
+                            display_message(f'{player_pokemon.name} used potion')
+                            time.sleep(2)
+                            game_status = 'rival turn'
+
+            # Si estamos en el estado "player move", movemos entre los movimientos del Pokémon
+            elif game_status == 'player move':
+                player_pokemon.draw()
+                rival_pokemon.draw()
+                player_pokemon.draw_hp()
+                rival_pokemon.draw_hp()
+
+                if buttons["up"].collidepoint(mouse_pos) or buttons["left"].collidepoint(mouse_pos):
+                    selected_move = (selected_move - 1) % len(player_pokemon.moves)  # Mover hacia arriba/izquierda
+                elif buttons["down"].collidepoint(mouse_pos) or buttons["right"].collidepoint(mouse_pos):
+                    selected_move = (selected_move + 1) % len(player_pokemon.moves)  # Mover hacia abajo/derecha
+                elif enter_button_rect.collidepoint(mouse_pos):  # Clic en el botón "Enter"
+                    move = player_pokemon.moves[selected_move]
+                    player_pokemon.perform_attack(rival_pokemon, move)
+
+                    if rival_pokemon.current_hp == 0:
+                        game_status = 'fainted'
+                    else:
+                        game_status = 'rival turn'
     if game_status == 'select pokemon':
         for index, pokemon in enumerate(pokemons):
-            x = 20+ (index % 3) * 150  # Calcular la posición x
+            x = 20 + (index % 3) * 150  # Calcular la posición x
             y = 20 + (index // 3) * 150  # Calcular la posición y
             pokemon.x = x
             pokemon.y = y
             pokemon.draw()
             if index == selected_index:
-                pygame.draw.rect(screen, gold, pokemon.get_rect(), 4)
+                pygame.draw.rect(screen, gold,  pokemon.get_rect(), 4)
+
+        # Dibuja los botones de movimiento
+        draw_movement_buttons()
+
+        # Dibuja el botón "Enter"
+        enter_button_rect = pygame.Rect(550, 250, 50, 50)
+        pygame.draw.rect(screen, (0, 0, 255), enter_button_rect)
+        enter_text = font.render("E", True, white)
+        screen.blit(enter_text, (enter_button_rect.x + 15, enter_button_rect.y + 10))
 
         # Mostrar el temporizador
         timer_text = font.render(str(int(timer)), True, black)
@@ -558,7 +598,7 @@ while game_status != 'quit':
             rival_pokemon.hp_y = 50
             save_selection_to_csv('pokemon_seleccionado.csv', username, player_pokemon.name)
             game_status = 'prebattle'  # Cambiar a la fase de batalla
-        pygame.display.update()
+
         # get moves from the API and reposition the pokemons
     if game_status == 'prebattle':
         # Dibuja el Pokémon seleccionado
@@ -596,7 +636,7 @@ while game_status != 'quit':
         # rival sends out their pokemon
         alpha = 0
         while alpha < 255:
-            game.fill(white) # fondo
+            game.fill(white)  # fondo
             rival_pokemon.draw(alpha)
             display_message(f'Rival sent out {rival_pokemon.name}!')
             alpha += .4
@@ -617,7 +657,7 @@ while game_status != 'quit':
 
             pygame.display.update()
 
-         # draw the hp bars
+        # draw the hp bars
         player_pokemon.draw_hp()
         rival_pokemon.draw_hp()
 
@@ -634,15 +674,29 @@ while game_status != 'quit':
 
     # display the fight and use potion buttons
     if game_status == 'player turn':
+
+        if 'selected_option' not in locals():
+            selected_option = 0
+
         game.fill(white)
         player_pokemon.draw()
         rival_pokemon.draw()
         player_pokemon.draw_hp()
         rival_pokemon.draw_hp()
 
-        # create the fight and use potion buttons
-        fight_button = create_button(240, 140, 10, 350, 130, 412, 'Fight')
-        potion_button = create_button(240, 140, 250, 350, 370, 412, f'Use Potion ({player_pokemon.num_potions})')
+        # Crear los botones de "Fight" y "Potion" con el parámetro 'selected'
+        fight_button = create_button(240, 140, 10, 350, 130, 412, 'Fight', selected=(selected_option == 0))
+        potion_button = create_button(240, 140, 250, 350, 370, 412, f'Use Potion ({player_pokemon.num_potions})',
+                                      selected=(selected_option == 1))
+
+        # Dibuja los botones de movimiento
+        draw_movement_buttons()
+
+        # Dibuja el botón "Enter"
+        enter_button_rect = pygame.Rect(550, 300, 50, 50)
+        pygame.draw.rect(game, (0, 0, 255), enter_button_rect)
+        enter_text = font.render("E", True, white)
+        game.blit(enter_text, (enter_button_rect.x + 15, enter_button_rect.y + 10))
 
         # draw the black border
         pygame.draw.rect(game, black, (10, 350, 480, 140), 3)
@@ -658,6 +712,9 @@ while game_status != 'quit':
         player_pokemon.draw_hp()
         rival_pokemon.draw_hp()
 
+        if 'selected_move' not in locals():
+            selected_move = 0
+
         # create a button for each move
         move_buttons = []
         for i in range(len(player_pokemon.moves)):
@@ -668,9 +725,20 @@ while game_status != 'quit':
             top = 350 + i // 2 * button_height
             text_center_x = left + 120
             text_center_y = top + 35
+
+            # Resaltar el botón si está seleccionado
             button = create_button(button_width, button_height, left, top, text_center_x, text_center_y,
-                                   move.name.capitalize())
+                                   move.name.capitalize(), selected=(i == selected_move))
             move_buttons.append(button)
+
+        # Dibuja los botones de movimiento
+        draw_movement_buttons()
+
+        # Dibuja el botón "Enter"
+        enter_button_rect = pygame.Rect(550, 300, 50, 50)  # posicion del enter e
+        pygame.draw.rect(game, (0, 0, 255), enter_button_rect)
+        enter_text = font.render("E", True, white)
+        game.blit(enter_text, (enter_button_rect.x + 15, enter_button_rect.y + 10))
 
         # draw the black border
         pygame.draw.rect(game, black, (10, 350, 480, 140), 3)
@@ -793,5 +861,4 @@ while game_status != 'quit':
         # Actualizar la pantalla al final del bucle
         pygame.display.flip()
 
-    pygame.display.flip()
-    pygame.time.delay(30)
+pygame.quit()
